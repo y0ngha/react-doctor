@@ -1891,10 +1891,16 @@ export const classComponentMissingComponentWillUnmountTeardown = defineRule({
             mountedListenerCounts,
             node,
             context,
-            suspendedClassHelperNodes.has(candidate) ||
-              isEnclosingFunctionInvokedAfterSuspension(candidate, body, node, context),
+            suspendedClassHelperNodes.has(candidate),
           );
-          if (candidateHazard) mountHazards.push(candidateHazard);
+          if (!candidateHazard) return;
+          candidateHazard.isAcquiredAfterSuspension ||= isEnclosingFunctionInvokedAfterSuspension(
+            candidate,
+            body,
+            node,
+            context,
+          );
+          mountHazards.push(candidateHazard);
         });
         if (mountHazards.length === 0) continue;
         const mobxDisposalReleaseCalls = collectMobxDisposalReleaseCalls(body, node, context);

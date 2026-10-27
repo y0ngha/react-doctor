@@ -278,6 +278,58 @@ describe("control-flow-graph", () => {
     });
   });
 
+  it("builds only requested function graphs and reuses them", () => {
+    const parsed = parseFixture("function used() { work(); } function unused() { other(); }");
+    attachParentReferences(parsed.program);
+    if (parsed.program.type !== "Program") throw new Error("Expected a program");
+    const [usedFunction, unusedFunction] = parsed.program.body;
+    if (unusedFunction.type !== "FunctionDeclaration") throw new Error("Expected a function");
+    const unusedBody = unusedFunction.body;
+    let unusedBodyReads = 0;
+    Object.defineProperty(unusedFunction, "body", {
+      get: () => {
+        unusedBodyReads += 1;
+        return unusedBody;
+      },
+    });
+
+    const analysis = analyzeControlFlow(parsed.program);
+    expect(unusedBodyReads).toBe(0);
+    expect(analysis.cfgFor(usedFunction)).not.toBeNull();
+    expect(unusedBodyReads).toBe(0);
+    const unusedGraph = analysis.cfgFor(unusedFunction);
+    expect(unusedGraph).not.toBeNull();
+    expect(unusedBodyReads).toBeGreaterThan(0);
+    const readsAfterBuilding = unusedBodyReads;
+    expect(analysis.cfgFor(unusedFunction)).toBe(unusedGraph);
+    expect(unusedBodyReads).toBe(readsAfterBuilding);
+    expect(analysis.cfgFor(parsed.program)).not.toBeNull();
+  });
+
+  it("computes unconditional blocks only when queried and reuses the result", () => {
+    const analysis = analyze("function Component(flag) { if (flag) step(); done(); }");
+    const callNode = findCalleeNode(analysis.program, "done");
+    if (!callNode) throw new Error("Expected a call");
+    const owner = analysis.enclosingFunction(callNode);
+    const graph = owner && analysis.cfgFor(owner);
+    if (!graph) throw new Error("Expected a graph");
+    const successors = graph.entry.successors;
+    let successorReads = 0;
+    Object.defineProperty(graph.entry, "successors", {
+      get: () => {
+        successorReads += 1;
+        return successors;
+      },
+    });
+
+    expect(successorReads).toBe(0);
+    expect(analysis.isUnconditionalFromEntry(callNode)).toBe(true);
+    expect(successorReads).toBeGreaterThan(0);
+    const readsAfterComputing = successorReads;
+    expect(analysis.isUnconditionalFromEntry(callNode)).toBe(true);
+    expect(successorReads).toBe(readsAfterComputing);
+  });
+
   describe("cfgFor", () => {
     it("returns a CFG for each function", () => {
       const analysis = analyze(`

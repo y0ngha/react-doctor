@@ -46,7 +46,6 @@ interface CfgBuilder {
   blocks: BasicBlock[];
   entry: BasicBlock;
   exit: BasicBlock;
-  nestedFunctions: EsTreeNode[];
   // Map every AST node visited inside this function to the block it
   // was appended to.
   nodeBlock: Map<EsTreeNode, BasicBlock>;
@@ -95,10 +94,7 @@ const appendNode = (builder: CfgBuilder, block: BasicBlock, node: EsTreeNode): v
 // crossing a function boundary (inner functions get their own CFG).
 const mapDescendantsToBlock = (builder: CfgBuilder, node: EsTreeNode, block: BasicBlock): void => {
   builder.nodeBlock.set(node, block);
-  if (isFunctionLike(node)) {
-    builder.nestedFunctions.push(node);
-    return;
-  }
+  if (isFunctionLike(node)) return;
   const record = node as unknown as Record<string, unknown>;
   const childKeys = RUNTIME_VISITOR_KEYS[node.type] ?? Object.keys(record);
   for (let keyIndex = 0; keyIndex < childKeys.length; keyIndex += 1) {
@@ -426,16 +422,11 @@ const buildStatement = (
   return current;
 };
 
-const buildFunctionCfg = (
-  functionNode: EsTreeNode,
-  body: EsTreeNode,
-  nestedFunctionSink: EsTreeNode[],
-): FunctionCfg => {
+const buildFunctionCfg = (functionNode: EsTreeNode, body: EsTreeNode): FunctionCfg => {
   const builder: CfgBuilder = {
     blocks: [],
     entry: null as unknown as BasicBlock,
     exit: null as unknown as BasicBlock,
-    nestedFunctions: nestedFunctionSink,
     nodeBlock: new Map(),
     loopStack: [],
     switchStack: [],
@@ -524,47 +515,28 @@ const computeUnconditionalSet = (cfg: FunctionCfg): Set<BasicBlock> => {
 
 interface FunctionCfgEntry {
   cfg: FunctionCfg;
-  unconditionalSet: Set<BasicBlock>;
+  unconditionalSet?: Set<BasicBlock>;
 }
 
-// Builds a CFG for the program and every function discovered while
-// mapping its descendants. Functions outside a mapped body, such as
-// parameter defaults, are built on demand.
 export const analyzeControlFlow = (program: EsTreeNode): ControlFlowAnalysis => {
   nextBlockId = 0;
   const functionCfgs = new Map<EsTreeNode, FunctionCfgEntry>();
-  const pendingFunctions: EsTreeNode[] = [];
 
   const buildFor = (functionNode: EsTreeNode, body: EsTreeNode): void => {
-    const cfg = buildFunctionCfg(functionNode, body, pendingFunctions);
-    functionCfgs.set(functionNode, {
-      cfg,
-      unconditionalSet: computeUnconditionalSet(cfg),
-    });
+    const cfg = buildFunctionCfg(functionNode, body);
+    functionCfgs.set(functionNode, { cfg });
   };
-
-  // Build CFG for the program itself (treat as a "function" for
-  // top-level reasoning).
-  if (program.type === "Program") {
-    // Synthesize a body block matching BlockStatement shape so
-    // buildFunctionCfg can iterate it.
-    const synthBody = { type: "BlockStatement", body: program.body } as unknown as EsTreeNode;
-    buildFor(program, synthBody);
-  }
-
-  for (let functionIndex = 0; functionIndex < pendingFunctions.length; functionIndex += 1) {
-    const functionNode = pendingFunctions[functionIndex];
-    if (!isFunctionLike(functionNode) || !functionNode.body || functionCfgs.has(functionNode)) {
-      continue;
-    }
-    buildFor(functionNode, functionNode.body);
-  }
 
   const getFunctionEntry = (functionNode: EsTreeNode): FunctionCfgEntry | null => {
     const existingEntry = functionCfgs.get(functionNode);
     if (existingEntry) return existingEntry;
-    if (!isFunctionLike(functionNode) || !functionNode.body) return null;
-    buildFor(functionNode, functionNode.body);
+    if (functionNode === program && program.type === "Program") {
+      const body = { type: "BlockStatement", body: program.body } as unknown as EsTreeNode;
+      buildFor(program, body);
+    } else {
+      if (!isFunctionLike(functionNode) || !functionNode.body) return null;
+      buildFor(functionNode, functionNode.body);
+    }
     return functionCfgs.get(functionNode) ?? null;
   };
 
@@ -589,6 +561,7 @@ export const analyzeControlFlow = (program: EsTreeNode): ControlFlowAnalysis => 
     if (!entry) return true;
     const block = entry.cfg.blockOf(node);
     if (!block) return true;
+    entry.unconditionalSet ??= computeUnconditionalSet(entry.cfg);
     return entry.unconditionalSet.has(block);
   };
 

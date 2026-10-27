@@ -1,8 +1,31 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
+import * as astWalk from "../../utils/walk-ast.js";
 import { runRule } from "../../../test-utils/run-rule.js";
 import { classComponentMissingComponentWillUnmountTeardown } from "./class-component-missing-component-will-unmount-teardown.js";
 
 describe("class-component-missing-component-will-unmount-teardown", () => {
+  it("does not rescan the class for helpers that acquire no resources", () => {
+    const walkSpy = vi.spyOn(astWalk, "walkAst");
+    try {
+      const result = runRule(
+        classComponentMissingComponentWillUnmountTeardown,
+        `class Screen extends React.Component {
+          componentDidMount() { this.initialize(); }
+          initialize() { this.value = { ready: true }; this.buildPanel(); }
+          buildPanel() { return { title: "Panel", values: [1, 2, 3] }; }
+          render() { return null; }
+        }`,
+      );
+      expect(result.parseErrors).toEqual([]);
+      expect(result.diagnostics).toEqual([]);
+      expect(
+        walkSpy.mock.calls.filter(([root]) => root.type === "ClassBody").length,
+      ).toBeLessThanOrEqual(1);
+    } finally {
+      walkSpy.mockRestore();
+    }
+  });
+
   it("flags a componentDidMount that registers a listener on a new instance", () => {
     const result = runRule(
       classComponentMissingComponentWillUnmountTeardown,
