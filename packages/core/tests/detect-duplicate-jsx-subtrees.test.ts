@@ -459,6 +459,64 @@ export const Formatted = () => (
     });
   });
 
+  it("stops after exhausting the node budget while preserving collected families", async () => {
+    const sourceText = componentSource("Card", "Card", "value");
+    const sources = ["a", "b", "c", "d", "e"].map((name) => ({
+      path: `src/${name}.tsx`,
+      sourceText,
+    }));
+    const options = { budget: { maxJsxNodes: 14 } };
+    const readPaths: string[] = [];
+    const result = detectDuplicateJsxSubtrees(sources, options);
+    const cooperativeResult = await detectDuplicateJsxSubtreesCooperative(
+      {
+        paths: sources.map((source) => source.path),
+        read: async (sourcePath) => {
+          readPaths.push(sourcePath);
+          return sourceText;
+        },
+      },
+      options,
+    );
+
+    expect(result.families).toEqual(detectDuplicateJsxSubtrees(sources.slice(0, 2)).families);
+    expect(result).toMatchObject({
+      scannedSourceFileCount: 2,
+      scannedJsxNodeCount: 14,
+      incomplete: true,
+      incompleteReasons: [{ kind: "jsx-node-limit", path: "src/c.tsx" }],
+    });
+    expect(cooperativeResult).toEqual(result);
+    expect(readPaths).toEqual(["src/a.tsx", "src/b.tsx", "src/c.tsx", "src/d.tsx"]);
+  });
+
+  it("continues past an oversized subtree when smaller files can still fit", async () => {
+    const sourceText = componentSource("Card", "Card", "value");
+    const sources = [
+      { path: "src/a.tsx", sourceText: sourceText.replace("<Button />", "<Button />".repeat(9)) },
+      { path: "src/b.tsx", sourceText },
+      { path: "src/c.tsx", sourceText },
+    ];
+    const options = { budget: { maxJsxNodes: 14 } };
+    const result = detectDuplicateJsxSubtrees(sources, options);
+    const cooperativeResult = await detectDuplicateJsxSubtreesCooperative(
+      {
+        paths: sources.map((source) => source.path),
+        read: async (sourcePath) =>
+          sources.find((source) => source.path === sourcePath)?.sourceText ?? null,
+      },
+      options,
+    );
+
+    expect(result.families).toEqual(detectDuplicateJsxSubtrees(sources.slice(1)).families);
+    expect(result).toMatchObject({
+      scannedJsxNodeCount: 14,
+      scannedSourceFileCount: 2,
+      incompleteReasons: [{ kind: "jsx-node-limit", path: "src/a.tsx" }],
+    });
+    expect(cooperativeResult).toEqual(result);
+  });
+
   it("ranks families by estimated removable nodes before individual tree size", () => {
     const repeatedFamily = (componentName: string): string => `
 export const ${componentName} = () => (

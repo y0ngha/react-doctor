@@ -121,7 +121,7 @@ interface CollectedJsxSubtreeCandidates {
 interface ScannedJsxDuplicationSource {
   candidates: JsxSubtreeCandidate[];
   incompleteReason: JsxDuplicationIncompleteReason | null;
-  didAbort: boolean;
+  shouldStop: boolean;
   didScan: boolean;
 }
 
@@ -524,7 +524,7 @@ const scanSource = (input: ScanJsxDuplicationSourceInput): ScannedJsxDuplication
         observed: input.source.sourceText.length,
         path: input.source.path,
       },
-      didAbort: false,
+      shouldStop: false,
       didScan: false,
     };
   }
@@ -539,7 +539,7 @@ const scanSource = (input: ScanJsxDuplicationSourceInput): ScannedJsxDuplication
     return {
       candidates: [],
       incompleteReason: null,
-      didAbort: false,
+      shouldStop: false,
       didScan: true,
     };
   }
@@ -553,7 +553,7 @@ const scanSource = (input: ScanJsxDuplicationSourceInput): ScannedJsxDuplication
     return {
       candidates: [],
       incompleteReason: { kind: "aborted", observed: input.scannedSourceFileCount },
-      didAbort: true,
+      shouldStop: true,
       didScan: false,
     };
   }
@@ -566,14 +566,14 @@ const scanSource = (input: ScanJsxDuplicationSourceInput): ScannedJsxDuplication
         observed: input.options.maxJsxNodes + 1,
         path: input.source.path,
       },
-      didAbort: false,
+      shouldStop: input.scannedJsxNodeCount >= input.options.maxJsxNodes,
       didScan: false,
     };
   }
   return {
     candidates: collectedCandidates.candidates,
     incompleteReason: null,
-    didAbort: false,
+    shouldStop: false,
     didScan: true,
   };
 };
@@ -741,7 +741,7 @@ export const detectDuplicateJsxSubtrees = (
     if (scannedSource.incompleteReason !== null) {
       incompleteReasons.push(scannedSource.incompleteReason);
     }
-    if (scannedSource.didAbort) break;
+    if (scannedSource.shouldStop) break;
     if (!scannedSource.didScan) continue;
     candidates.push(...scannedSource.candidates);
     scannedJsxNodeCount += scannedSource.candidates.length;
@@ -811,7 +811,7 @@ export const detectDuplicateJsxSubtreesCooperative = async (
       scannedJsxNodeCount += scannedSource.candidates.length;
       scannedSourceFileCount += 1;
     }
-    if (scannedSource.didAbort) break;
+    if (scannedSource.shouldStop) break;
     await yieldToEventLoop();
   }
 
