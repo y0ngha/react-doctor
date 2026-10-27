@@ -280,16 +280,14 @@ export const OXLINT_POOLED_MIN_FILES_PER_BATCH = 8;
 // Bounds for the lint worker count (the `OxlintConcurrency` Reference, seeded by
 // the `REACT_DOCTOR_PARALLEL` env var; the CLI's `--no-parallel` flag forces the
 // MIN end). React Doctor's rules are oxlint JS plugins — single-threaded per
-// process — so running the file batches across N concurrent oxlint subprocesses
-// scales the scan nearly linearly with N up to the straggler / per-spawn-overhead
-// knee (~10 workers). `resolveAutoScanConcurrency` chooses N for the auto path;
+// process. `resolveAutoScanConcurrency` chooses N for the auto path;
 // every requested count is clamped to [MIN, HARD_MAX].
 export const MIN_SCAN_CONCURRENCY = 1;
 
-// Automatic scans stop at the measured parallel-efficiency knee so CPU
-// contention cannot push healthy JS-plugin batches into timeout retries.
+// Limit replicated Node/plugin heaps on developer machines. Four workers kept
+// tldraw/refine throughput while reducing process-tree RSS on the benchmark host.
 // Explicit and programmatic worker counts can still reach the hard ceiling.
-export const AUTO_MAX_SCAN_CONCURRENCY = 10;
+export const AUTO_MAX_SCAN_CONCURRENCY = 4;
 
 // Absolute upper bound on lint workers, and the clamp applied to every requested
 // count (auto-detected, `REACT_DOCTOR_PARALLEL=N`, or `inspect({ concurrency })`).

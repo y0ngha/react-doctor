@@ -13,17 +13,26 @@ const MIB = 1024 * 1024;
 
 describe("resolveAutoScanConcurrency", () => {
   it("is core-bound when memory is plentiful", () => {
-    // floor(64 GiB / 1 GiB) = 64 workers fit, so the 8 cores bind.
     expect(
       resolveAutoScanConcurrency({
-        availableCores: 8,
+        availableCores: 2,
         totalMemoryBytes: 16 * GIB,
         cgroupMemoryLimitBytes: undefined,
       }),
-    ).toBe(8);
+    ).toBe(2);
   });
 
-  it("caps the automatic path at its parallel-efficiency knee", () => {
+  it.each([8, 10])("uses four automatic workers for %i cores and 16 GiB", (availableCores) => {
+    expect(
+      resolveAutoScanConcurrency({
+        availableCores,
+        totalMemoryBytes: 16 * GIB,
+        cgroupMemoryLimitBytes: undefined,
+      }),
+    ).toBe(4);
+  });
+
+  it("caps automatic workers on larger hosts too", () => {
     expect(
       resolveAutoScanConcurrency({
         availableCores: 16,
@@ -34,28 +43,23 @@ describe("resolveAutoScanConcurrency", () => {
   });
 
   it("is memory-bound on a high-core / memory-starved box", () => {
-    // floor(6 GiB / 1 GiB) = 6 — a 64-core box with little RAM does NOT spawn
-    // 32 workers (the native-binding SIGABRT trap this budget exists to avoid).
     expect(
       resolveAutoScanConcurrency({
         availableCores: 64,
-        totalMemoryBytes: 6 * GIB,
+        totalMemoryBytes: 2 * GIB,
         cgroupMemoryLimitBytes: undefined,
       }),
-    ).toBe(6);
+    ).toBe(2);
   });
 
   it("honors a cgroup memory limit below the host total", () => {
-    // The container sees 200 GiB of HOST memory via os.totalmem(), but its
-    // cgroup caps it at 4 GiB → floor(4 / 1) = 4. This is the case Node's
-    // totalmem()/freemem() both get wrong without the direct cgroup read.
     expect(
       resolveAutoScanConcurrency({
         availableCores: 64,
         totalMemoryBytes: 200 * GIB,
-        cgroupMemoryLimitBytes: 4 * GIB,
+        cgroupMemoryLimitBytes: 2 * GIB,
       }),
-    ).toBe(4);
+    ).toBe(2);
   });
 
   it("never exceeds AUTO_MAX_SCAN_CONCURRENCY", () => {

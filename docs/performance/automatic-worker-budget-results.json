@@ -1,0 +1,129 @@
+{
+  "baseCommit": "84ad0c8d0df7a3ab7d26946367fae3bc39c100d0",
+  "host": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "nodeVersion": "v22.19.0",
+    "v8Version": "12.4.254.21-node.29",
+    "cpuModel": "Apple M5",
+    "cpuCount": 10,
+    "totalMemoryBytes": 34359738368
+  },
+  "method": "Same build, explicit 10 versus 4 workers; three measured scans after one warmup, no-cache, full mode (score and supply-chain disabled).",
+  "series": [
+    {
+      "target": "tldraw-package",
+      "targetCommit": "92e4896ce1a73300ad87637f450af06be124bb5f",
+      "sourceFingerprint": "bd7b69700fec61e4d13dd6473fa79d6e434647594579c79e70349aa9f5bf25d7",
+      "scannedFiles": 550,
+      "workers": 10,
+      "wallMilliseconds": [1447.3106670000002, 1493.3540000000003, 1455.5122920000003],
+      "medianWallMilliseconds": 1455.5122920000003,
+      "diagnostics": 108,
+      "diagnosticHash": "0e1f40b18a25a30ce353dc15ee5533b7c0dce8ea25be43e3821533a8b0a92d97"
+    },
+    {
+      "target": "tldraw-package",
+      "targetCommit": "92e4896ce1a73300ad87637f450af06be124bb5f",
+      "sourceFingerprint": "bd7b69700fec61e4d13dd6473fa79d6e434647594579c79e70349aa9f5bf25d7",
+      "scannedFiles": 550,
+      "workers": 4,
+      "wallMilliseconds": [1257.6335839999992, 1316.5489160000016, 1471.841625000001],
+      "medianWallMilliseconds": 1316.5489160000016,
+      "diagnostics": 108,
+      "diagnosticHash": "0e1f40b18a25a30ce353dc15ee5533b7c0dce8ea25be43e3821533a8b0a92d97"
+    },
+    {
+      "target": "tldraw",
+      "targetCommit": "92e4896ce1a73300ad87637f450af06be124bb5f",
+      "sourceFingerprint": "6fb6fec70116cc72f5e8e2a1a44d4e31fc89b3a0f25892ab6691600c485fe383",
+      "scannedFiles": 2399,
+      "workers": 10,
+      "wallMilliseconds": [4630.811125, 5282.633791, 5293.8425000000025],
+      "medianWallMilliseconds": 5282.633791,
+      "diagnostics": 896,
+      "diagnosticHash": "3c1bdb3a066ec87955208fe86eca2dd3ff0908dcac34372beb7750fd542b8ecb"
+    },
+    {
+      "target": "tldraw",
+      "targetCommit": "92e4896ce1a73300ad87637f450af06be124bb5f",
+      "sourceFingerprint": "6fb6fec70116cc72f5e8e2a1a44d4e31fc89b3a0f25892ab6691600c485fe383",
+      "scannedFiles": 2399,
+      "workers": 4,
+      "wallMilliseconds": [4125.161625000001, 4288.940540999996, 4100.514583000004],
+      "medianWallMilliseconds": 4125.161625000001,
+      "diagnostics": 896,
+      "diagnosticHash": "3c1bdb3a066ec87955208fe86eca2dd3ff0908dcac34372beb7750fd542b8ecb"
+    },
+    {
+      "target": "refine",
+      "targetCommit": "779d52a20e29b0307ac0df04d135beba434370dc",
+      "sourceFingerprint": "05a53597262a5024e0fce699b2247c5821845a307720c700698a685e91c730e8",
+      "scannedFiles": 7003,
+      "workers": 10,
+      "wallMilliseconds": [14653.913417000003, 14718.595874999999, 14850.770083999989],
+      "medianWallMilliseconds": 14718.595874999999,
+      "diagnostics": 1446,
+      "diagnosticHash": "efab7da515af7e9ef89854e493b21e6ea396abe83035e87765c419f055ae32ee"
+    },
+    {
+      "target": "refine",
+      "targetCommit": "779d52a20e29b0307ac0df04d135beba434370dc",
+      "sourceFingerprint": "05a53597262a5024e0fce699b2247c5821845a307720c700698a685e91c730e8",
+      "scannedFiles": 7003,
+      "workers": 4,
+      "wallMilliseconds": [14536.645457999999, 14758.804749999981, 15143.016416999977],
+      "medianWallMilliseconds": 14758.804749999981,
+      "diagnostics": 1446,
+      "diagnosticHash": "efab7da515af7e9ef89854e493b21e6ea396abe83035e87765c419f055ae32ee"
+    }
+  ],
+  "memory": {
+    "10": {
+      "medianPeakRssBytes": 2832039936,
+      "peaks": [
+        {
+          "seconds": 4.263815209,
+          "rssBytes": 2832039936,
+          "processCount": 11
+        },
+        {
+          "seconds": 4.4297155,
+          "rssBytes": 2835660800,
+          "processCount": 11
+        },
+        {
+          "seconds": 4.557663583,
+          "rssBytes": 2821521408,
+          "processCount": 11
+        }
+      ]
+    },
+    "auto-4": {
+      "medianPeakRssBytes": 1473134592,
+      "peaks": [
+        {
+          "seconds": 4.471800124999999,
+          "rssBytes": 1471643648,
+          "processCount": 5
+        },
+        {
+          "seconds": 4.219581999999999,
+          "rssBytes": 1473134592,
+          "processCount": 5
+        },
+        {
+          "seconds": 4.234779708,
+          "rssBytes": 1521025024,
+          "processCount": 5
+        }
+      ]
+    }
+  },
+  "hotCache": {
+    "beforeMedianMilliseconds": 518.4226250000002,
+    "afterMedianMilliseconds": 477.5276670000003,
+    "diagnosticsMatch": true
+  },
+  "measuredAt": "2026-10-27T02:42:58.426Z"
+}

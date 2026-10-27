@@ -5,6 +5,8 @@ import { resolveScanConcurrency } from "../src/utils/resolve-scan-concurrency.js
 describe("resolveScanConcurrency", () => {
   it("passes through in-range integers unchanged", () => {
     expect(resolveScanConcurrency(4)).toBe(4);
+    expect(resolveScanConcurrency(8)).toBe(8);
+    expect(resolveScanConcurrency(10)).toBe(10);
     expect(resolveScanConcurrency(MIN_SCAN_CONCURRENCY)).toBe(MIN_SCAN_CONCURRENCY);
     expect(resolveScanConcurrency(HARD_MAX_SCAN_CONCURRENCY)).toBe(HARD_MAX_SCAN_CONCURRENCY);
   });

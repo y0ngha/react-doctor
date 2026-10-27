@@ -10,7 +10,7 @@ export interface AutoScanConcurrencyFacts extends SystemConcurrencyFacts {}
 /**
  * Auto lint-worker count: the smaller of the (cgroup-CPU-aware) core count and
  * the number of `PER_WORKER_MEM_BUDGET_BYTES` workers that fit in available
- * memory, and the measured automatic parallel-efficiency ceiling, then clamped
+ * memory, and the automatic worker ceiling, then clamped
  * to `[MIN, HARD_MAX]` by `resolveScanConcurrency`.
  *
  * `os.availableParallelism()` already respects cgroup CPU quotas, so the core
